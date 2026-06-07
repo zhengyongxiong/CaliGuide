@@ -17,8 +17,9 @@ import feedbackRoutes from "./server/routes/feedback.js";
 import reminderRoutes from "./server/routes/reminders.js";
 import eventRoutes from "./server/routes/events.js";
 
-// Import DB initialization
+// Import DB initialization and seed
 import "./server/db/index.js";
+import "./server/db/seed.js";
 
 async function startServer() {
   const app = express();

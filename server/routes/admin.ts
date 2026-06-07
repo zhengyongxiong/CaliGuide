@@ -6,7 +6,19 @@ import { adminMiddleware } from '../middleware/admin.js';
 
 const router = Router();
 
-// Apply auth and admin middleware to all routes
+// ============ Public Routes (No Auth Required) ============
+
+// Get active announcements (public)
+router.get('/public/announcements', (_req: AuthRequest, res: Response) => {
+  const announcements = db.prepare(`
+    SELECT * FROM announcements
+    WHERE active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))
+    ORDER BY created_at DESC
+  `).all();
+  res.json(announcements);
+});
+
+// Apply auth and admin middleware to all remaining routes
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
@@ -329,17 +341,6 @@ router.get('/logs', (req: AuthRequest, res: Response) => {
     LIMIT 100
   `).all();
   res.json(logs);
-});
-
-// ============ Public Announcements ============
-
-router.get('/public/announcements', (req: AuthRequest, res: Response) => {
-  const announcements = db.prepare(`
-    SELECT * FROM announcements
-    WHERE active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))
-    ORDER BY created_at DESC
-  `).all();
-  res.json(announcements);
 });
 
 // ============ Event Management ============
