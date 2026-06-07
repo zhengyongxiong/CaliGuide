@@ -1,13 +1,16 @@
+// Legacy constants - data is now loaded from API
+// These are kept for backward compatibility during migration
+
 export const RECOMMENDED_GUIDES = [
   {
-    id: 'guide-1',
-    title: 'How to Apply for Your First California Driver’s License',
-    category: 'Guide',
+    id: 'guide-dmv',
+    title: 'How to Apply for Your First California Driver\'s License',
+    category: 'DMV',
     readTime: '8 min read',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAMKD1Df0ESEk-lv-uH3ZYYdkSP-bBXXV1gPf6iPpEzeo-WoSUru8NN6yalo1StqQBq2DT8mOaPEf0dYO45F_A2Xw7c7xmakcj4e_jVKteedu-R4wu_VB6GRNOOo9R4PspBiXST5fKNuZecFPMg8iaCVQL_l-Ebauyg0Twb-KhtkGr9E3LbASlvSDMCL59o_CecUKE05Kh94NJOHr4Lv3YyPJP2q25Qpz2cwmGBNwiplaTOhr_IXrIi5zQFvsHPOJC-uOtmHNwP53E'
   },
   {
-    id: 'guide-2',
+    id: 'guide-housing',
     title: 'Navigating the Rental Market: A Newcomer\'s Handbook',
     category: 'Housing',
     readTime: '12 min read',

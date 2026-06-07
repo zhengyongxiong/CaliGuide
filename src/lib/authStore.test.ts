@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
   changePassword,
   createAuthState,
@@ -33,7 +33,7 @@ describe("authStore", () => {
       password: "secure123",
     });
 
-    expect(registered.currentUser?.avatarUrl).toStartWith("data:image/svg+xml");
+    expect(registered.currentUser?.avatarUrl).toMatch(/^data:image\/svg\+xml/);
     expect(registered.currentUser?.avatarUrl).not.toContain("images.unsplash.com");
   });
 

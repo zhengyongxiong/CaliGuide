@@ -1,136 +1,286 @@
-import { Info, CheckCircle2, FileText, Star, ClipboardCheck, UserPlus, Calendar, Eye, HelpCircle, Car, MapPin, ChevronDown } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
+import {
+  Info, CheckCircle2, FileText, Star, ClipboardCheck, UserPlus, Calendar,
+  Eye, HelpCircle, Car, MapPin, ChevronDown, Bookmark, Clock, ArrowLeft,
+  Landmark, CreditCard, Search, Key, HeartPulse, Loader2, ExternalLink
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { guidesApi } from '../lib/api';
+import { Page, Guide as GuideType } from '../types';
+import { useI18n } from '../i18n';
 
-export default function Guide() {
-  const steps = [
-    { icon: UserPlus, title: '1. Online Application', desc: 'Complete the DL 44 form on the DMV website.' },
-    { icon: Calendar, title: '2. Book Appointment', desc: 'Schedule your visit at a local DMV field office.' },
-    { icon: Eye, title: '3. Field Tests', desc: 'Vision exam and fingerprinting at the office.' },
-    { icon: HelpCircle, title: '4. Knowledge Test', desc: 'Pass the written law and signs examination.' },
-    { icon: Car, title: '5. Driving Test', desc: 'Final behind-the-wheel performance evaluation.' },
-  ];
+interface GuideProps {
+  guideId: string | null;
+  onNavigate: (page: Page, params?: { guideId?: string }) => void;
+}
+
+const ICON_MAP: Record<string, any> = {
+  UserPlus, Calendar, Eye, HelpCircle, Car, MapPin, Search, FileText,
+  ClipboardCheck, Landmark, CreditCard, Key, HeartPulse, Star,
+};
+
+function resolveStepIcon(iconName: string) {
+  return ICON_MAP[iconName] || ClipboardCheck;
+}
+
+export default function Guide({ guideId, onNavigate }: GuideProps) {
+  if (guideId) {
+    return <GuideDetail guideId={guideId} onBack={() => onNavigate('guide')} />;
+  }
+  return <GuideList onNavigate={onNavigate} />;
+}
+
+// Guide List View
+function GuideList({ onNavigate }: { onNavigate: (page: Page, params?: { guideId?: string }) => void }) {
+  const { t } = useI18n();
+  const [guides, setGuides] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    guidesApi.list().then(setGuides).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="pt-20 pb-24 flex items-center justify-center min-h-[60vh]">
+        <Loader2 size={32} className="text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="pt-20 pb-24 max-w-lg mx-auto px-4">
-      {/* Hero */}
-      <section className="mb-6">
-        <h1 className="text-3xl font-bold text-on-surface mb-3">California Driver's License</h1>
-        <p className="text-on-surface-variant leading-relaxed">
-          Navigating the Department of Motor Vehicles (DMV) is a key milestone for your mobility in California. This guide breaks down the requirements and steps for new residents and first-time applicants.
-        </p>
+    <div className="pt-16 pb-4 px-4">
+      <section className="py-4">
+        <h1 className="text-2xl font-bold text-on-surface mb-1">{t('guide.allGuides')}</h1>
+        <p className="text-sm text-on-surface-variant">Step-by-step guides for your life in California.</p>
       </section>
 
-      {/* Overview Card */}
-      <section className="mb-6 bg-white border border-outline-variant p-5 rounded-2xl shadow-sm">
-        <div className="flex items-center gap-2 mb-3 text-primary">
-          <Info size={24} />
-          <h3 className="text-xl font-bold">Overview</h3>
-        </div>
-        <p className="text-sm mb-4 leading-relaxed">
-          In California, if you are a resident and want to drive a motor vehicle on a public road, you must have a valid California Driver’s License. New residents must apply within 10 days of establishing residency.
-        </p>
-        <div className="p-3 bg-surface-container rounded-xl">
-          <p className="text-xs font-bold text-primary mb-1">Key Fee</p>
-          <p className="font-semibold">$45.00 (Standard Application)</p>
-        </div>
-      </section>
-
-      {/* Required Documents */}
-      <section className="mb-6 bg-white border border-outline-variant p-5 rounded-2xl shadow-sm">
-        <div className="flex items-center gap-2 mb-4 text-primary">
-          <FileText size={24} />
-          <h3 className="text-xl font-bold">Required Documents</h3>
-        </div>
-        <div className="space-y-3">
-          {[
-            { title: 'Identity & Birth Date', desc: 'Valid foreign passport with I-94 or Permanent Resident Card.' },
-            { title: 'Social Security Number', desc: 'SSN card or proof of ineligibility if applicable.' },
-            { title: 'Residency Proof (x2)', desc: 'Utility bills, rental agreements, or employment records.' },
-            { title: 'REAL ID Requirement', desc: 'Recommended for domestic air travel after May 2025.', special: true }
-          ].map((doc, i) => (
-            <div key={i} className={`flex gap-3 p-3 border border-outline-variant rounded-xl ${doc.special ? 'bg-surface-container-low' : ''}`}>
-              {doc.special ? <Star size={20} className="text-primary flex-shrink-0" fill="currentColor" /> : <CheckCircle2 size={20} className="text-secondary flex-shrink-0" />}
-              <div>
-                <p className="text-sm font-bold">{doc.title}</p>
-                <p className="text-xs text-on-surface-variant mt-0.5">{doc.desc}</p>
+      <div className="space-y-3">
+        {guides.map((guide) => (
+          <motion.div
+            key={guide.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => onNavigate('guide', { guideId: guide.id })}
+            className="card overflow-hidden cursor-pointer"
+          >
+            {guide.image_url && (
+              <img src={guide.image_url} alt={guide.title} className="w-full h-40 object-cover" />
+            )}
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-primary-light text-primary px-2 py-0.5 rounded text-[10px] font-medium">
+                  {guide.category}
+                </span>
+                <span className="text-xs text-on-surface-variant flex items-center gap-1">
+                  <Clock size={12} /> {guide.read_time}
+                </span>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5-Step Process */}
-      <section className="mb-6 bg-white border border-outline-variant p-5 rounded-2xl shadow-sm relative overflow-hidden">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2 text-primary">
-            <ClipboardCheck size={24} />
-            <h3 className="text-xl font-bold">The 5-Step Process</h3>
-          </div>
-          <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-[10px] font-bold">Estimated: 3-6 Weeks</span>
-        </div>
-
-        <div className="flex flex-col gap-8">
-          {steps.map((step, i) => (
-            <div key={i} className="flex gap-4 relative">
-              {i < steps.length - 1 && (
-                <div className="absolute left-6 top-10 bottom-[-32px] w-0.5 bg-outline-variant" />
+              <h3 className="font-semibold text-on-surface mb-1">{guide.title}</h3>
+              <p className="text-sm text-on-surface-variant line-clamp-2">{guide.description}</p>
+              {guide.fee && (
+                <p className="text-xs text-primary font-medium mt-2">Fee: {guide.fee}</p>
               )}
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 z-10 shadow-sm ${i === 0 ? 'bg-secondary text-white' : i === 1 ? 'bg-primary text-white' : 'bg-surface-container-highest border-2 border-outline-variant text-on-surface-variant'}`}>
-                <step.icon size={24} />
-              </div>
-              <div className="pt-1">
-                <p className="font-bold text-sm mb-1">{step.title}</p>
-                <p className="text-xs text-on-surface-variant">{step.desc}</p>
-              </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-      {/* CTA Section */}
-      <section className="mb-6">
-        <div className="bg-primary text-white p-6 rounded-2xl relative overflow-hidden flex flex-col gap-4">
-          <div className="relative z-10">
-            <h3 className="text-2xl font-bold mb-2">Ready to start?</h3>
-            <p className="text-white/80 text-sm">
-              Locate your nearest California DMV field office and book your appointment today to skip the long queues.
-            </p>
+// Guide Detail View
+function GuideDetail({ guideId, onBack }: { guideId: string; onBack: () => void }) {
+  const { t } = useI18n();
+  const [guide, setGuide] = useState<GuideType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  useEffect(() => {
+    guidesApi.get(guideId).then(setGuide).finally(() => setLoading(false));
+  }, [guideId]);
+
+  const handleSave = async () => {
+    try {
+      const result = await guidesApi.save(guideId);
+      setSaved(result.saved);
+    } catch (e) {
+      console.error('Failed to save guide:', e);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="pt-20 pb-24 flex items-center justify-center min-h-[60vh]">
+        <Loader2 size={32} className="text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!guide) {
+    return (
+      <div className="pt-20 pb-24 flex flex-col items-center justify-center min-h-[60vh]">
+        <p className="text-on-surface-variant">Guide not found.</p>
+        <button onClick={onBack} className="mt-4 text-primary font-medium">
+          {t('common.back')}
+        </button>
+      </div>
+    );
+  }
+
+  const steps = guide.steps || [];
+  const documents = guide.documents || [];
+  const faq = guide.faq || [];
+
+  return (
+    <div className="pt-16 pb-4 px-4">
+      {/* Back button */}
+      <button onClick={onBack} className="flex items-center gap-2 text-primary font-medium text-sm mb-4 pt-2">
+        <ArrowLeft size={18} /> {t('common.back')}
+      </button>
+
+      {/* Header */}
+      {guide.image_url && (
+        <img src={guide.image_url} alt={guide.title} className="w-full h-48 object-cover rounded-xl mb-4" />
+      )}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="bg-primary-light text-primary px-2.5 py-1 rounded-full text-xs font-medium">
+            {guide.category}
+          </span>
+          <span className="text-xs text-on-surface-variant flex items-center gap-1">
+            <Clock size={12} /> {guide.read_time}
+          </span>
+        </div>
+        <h1 className="text-2xl font-bold text-on-surface mb-2">{guide.title}</h1>
+        <p className="text-sm text-on-surface-variant leading-relaxed">{guide.description}</p>
+        {guide.fee && (
+          <p className="text-sm text-primary font-medium mt-2">Fee: {guide.fee}</p>
+        )}
+      </div>
+
+      {/* Overview */}
+      {guide.content && (
+        <div className="card p-4 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Info size={18} className="text-primary" />
+            <h2 className="text-base font-semibold">{t('guide.overview')}</h2>
           </div>
-          <button className="relative z-10 bg-secondary-container text-on-secondary-container px-6 py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:scale-105 transition-transform shadow-lg">
-            <MapPin size={20} />
-            Find your nearest DMV
-          </button>
-          
-          <div className="absolute right-0 top-0 h-full w-1/2 opacity-30 pointer-events-none">
-            <img 
-              alt="California" 
-              className="h-full w-full object-cover" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnR53aN2XtLOOHcVmHzy8rYbJqJLbkeOJDnsvX0N9Na3aco9sBsl2mNb4bOVdjj5F_HVczRqMHF5LTUO_tq_o7Fg6O7lI4FKivEpJZhyvc3Z_x-FRVvcp5yGjNwelhVJu2vkRM3bFroIi0uUR6Ip1sl98KomNWpC0Sr_QuafnivPpVJnsL7CMTSs9iLQHw_nWlbEVwFaI1zP2LXTmU-BDq-L53mcWJ-OH8225vRhh8b7_sFglnd5coUHH-lSUL1uvxtGB6_h1HrjU"
-            />
+          <p className="text-sm text-on-surface-variant leading-relaxed">{guide.content}</p>
+        </div>
+      )}
+
+      {/* Steps */}
+      {steps.length > 0 && (
+        <div className="card p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardCheck size={18} className="text-primary" />
+            <h2 className="text-base font-semibold">{t('guide.steps')}</h2>
+          </div>
+          <div className="space-y-3">
+            {steps.map((step: any, i: number) => {
+              const Icon = resolveStepIcon(step.icon);
+              return (
+                <div key={i} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                    <Icon size={16} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{step.title}</p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">{step.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </section>
+      )}
+
+      {/* Documents */}
+      {documents.length > 0 && (
+        <div className="card p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText size={18} className="text-primary" />
+            <h2 className="text-base font-semibold">{t('guide.documents')}</h2>
+          </div>
+          <div className="space-y-2">
+            {documents.map((doc: any, i: number) => (
+              <div key={i} className={`p-3 rounded-lg ${doc.special ? 'bg-warning-container' : 'bg-surface-variant'}`}>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className={doc.special ? 'text-warning' : 'text-success'} />
+                  <p className="text-sm font-medium">{doc.title}</p>
+                </div>
+                <p className="text-xs text-on-surface-variant mt-1 ml-6">{doc.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* FAQ */}
-      <section className="mb-8">
-        <h4 className="text-xl font-bold mb-4">Frequently Asked Questions</h4>
-        <div className="space-y-3">
-          {[
-            { q: 'Can I use a license from my home country?', a: "California recognizes a valid driver's license from your home country for a short period. However, once you become a resident, you must obtain a California license within 10 days." },
-            { q: 'Is the written test available in other languages?', a: 'Yes, the DMV offers the knowledge test in many languages, including Spanish, Chinese, Hindi, and more. You can request this at the time of your appointment.' }
-          ].map((item, i) => (
-            <details key={i} className="group bg-surface-container p-4 rounded-xl border border-transparent hover:border-outline-variant transition-colors cursor-pointer">
-              <summary className="flex justify-between items-center font-bold text-sm list-none">
-                {item.q}
-                <ChevronDown size={20} className="group-open:rotate-180 transition-transform" />
-              </summary>
-              <p className="mt-3 text-sm text-on-surface-variant leading-relaxed">
-                {item.a}
-              </p>
-            </details>
-          ))}
+      {faq.length > 0 && (
+        <div className="card p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <HelpCircle size={18} className="text-primary" />
+            <h2 className="text-base font-semibold">{t('guide.faq')}</h2>
+          </div>
+          <div className="space-y-2">
+            {faq.map((item: any, i: number) => (
+              <div key={i} className="border border-outline-variant rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full p-3 flex items-center justify-between text-left hover:bg-surface-variant/50 transition-colors"
+                >
+                  <span className="text-sm font-medium">{item.q}</span>
+                  <ChevronDown
+                    size={16}
+                    className={`text-on-surface-variant transition-transform ${openFaq === i ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                <AnimatePresence>
+                  {openFaq === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <p className="px-3 pb-3 text-sm text-on-surface-variant">{item.a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleSave}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors btn-press ${
+            saved
+              ? 'bg-primary text-white'
+              : 'bg-primary-light text-primary'
+          }`}
+        >
+          <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
+          {saved ? t('guide.saved') : t('guide.saveGuide')}
+        </button>
+        {guide.category === 'DMV' && (
+          <a
+            href="https://www.dmv.ca.gov/portal/appointment/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-surface-variant text-on-surface hover:bg-surface-container-high transition-colors"
+          >
+            <ExternalLink size={18} />
+            {t('guide.findNearest')}
+          </a>
+        )}
+      </div>
     </div>
   );
 }

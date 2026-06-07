@@ -1,52 +1,50 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { rateLimit, sanitizeInput } from "./server/middleware/auth.js";
 
 dotenv.config();
 
+// Import routes
+import authRoutes from "./server/routes/auth.js";
+import guideRoutes from "./server/routes/guides.js";
+import forumRoutes from "./server/routes/forum.js";
+import chatRoutes from "./server/routes/chat.js";
+import profileRoutes from "./server/routes/profile.js";
+import adminRoutes from "./server/routes/admin.js";
+import feedbackRoutes from "./server/routes/feedback.js";
+import reminderRoutes from "./server/routes/reminders.js";
+import eventRoutes from "./server/routes/events.js";
+
+// Import DB initialization
+import "./server/db/index.js";
+
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
-  app.use(express.json());
+  // Security middleware
+  app.use(express.json({ limit: '10mb' }));
+  app.use(sanitizeInput);
 
-  // Gemini API client
-  const apiKey = process.env.GEMINI_API_KEY;
-  const ai = apiKey ? new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      }
-    }
-  }) : null;
+  // Rate limiting for auth endpoints
+  app.use("/api/auth", rateLimit(50, 15 * 60 * 1000)); // 50 requests per 15 minutes
 
   // API routes
-  app.post("/api/chat", async (req, res) => {
-    if (!ai) {
-      return res.status(500).json({ error: "Gemini API key not configured" });
-    }
+  app.use("/api/auth", authRoutes);
+  app.use("/api/guides", guideRoutes);
+  app.use("/api/forum", forumRoutes);
+  app.use("/api/chat", chatRoutes);
+  app.use("/api/profile", profileRoutes);
+  app.use("/api/admin", adminRoutes);
+  app.use("/api/feedback", feedbackRoutes);
+  app.use("/api/reminders", reminderRoutes);
+  app.use("/api/events", eventRoutes);
 
-    try {
-      const { message, history } = req.body;
-      
-      const chat = ai.chats.create({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction: "You are CaliBot, a professional immigration assistant for California. You help users with visa status, document preparation, and legal guidance. Be helpful, concise, and professional.",
-        },
-        // In the new SDK, history is handled by messages passed to sendMessage if needed, 
-        // but for now let's just use simple message.
-      });
-
-      const response = await chat.sendMessage({ message });
-      res.json({ text: response.text });
-    } catch (error: any) {
-      console.error("Gemini API Error:", error);
-      res.status(500).json({ error: error.message || "Internal Server Error" });
-    }
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   // Vite middleware for development
@@ -59,13 +57,14 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 

@@ -1,11 +1,13 @@
-import { 
-  Home as HomeIcon, 
-  MessageSquare, 
-  Bot, 
-  UserCircle 
+import {
+  Home as HomeIcon,
+  MessageSquare,
+  Bot,
+  UserCircle,
+  Calendar
 } from 'lucide-react';
 import { Page } from '../types';
 import { motion } from 'motion/react';
+import { useI18n } from '../i18n';
 
 interface NavigationProps {
   currentPage: Page;
@@ -13,41 +15,52 @@ interface NavigationProps {
 }
 
 export default function Navigation({ currentPage, onPageChange }: NavigationProps) {
+  const { t } = useI18n();
+
   const tabs = [
-    { id: 'home', label: 'Home', icon: HomeIcon },
-    { id: 'forum', label: 'Forum', icon: MessageSquare },
-    { id: 'chatbot', label: 'Chatbot', icon: Bot },
-    { id: 'profile', label: 'Profile', icon: UserCircle },
-  ] as const;
+    { id: 'home' as Page, label: t('nav.home'), icon: HomeIcon },
+    { id: 'forum' as Page, label: t('nav.forum'), icon: MessageSquare },
+    { id: 'events' as Page, label: 'Events', icon: Calendar },
+    { id: 'chatbot' as Page, label: t('nav.chatbot'), icon: Bot },
+    { id: 'profile' as Page, label: t('nav.profile'), icon: UserCircle },
+  ];
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-outline-variant shadow-lg flex justify-around items-center px-2 py-3 pb-safe">
-      {tabs.map((tab) => {
-        const isActive = currentPage === tab.id;
-        const Icon = tab.icon;
-        
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onPageChange(tab.id)}
-            className={`relative flex flex-col items-center justify-center px-5 py-1 transition-all duration-200 ${
-              isActive ? 'scale-100' : 'scale-90 opacity-70 hover:opacity-100'
-            }`}
-          >
-            {isActive && (
-              <motion.div
-                layoutId="nav-bg"
-                className="absolute inset-0 bg-secondary-container rounded-full z-0"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-            <div className={`relative z-10 flex flex-col items-center justify-center ${isActive ? 'text-on-secondary-container' : 'text-on-surface-variant'}`}>
-              <Icon size={24} fill={isActive ? "currentColor" : "none"} />
-              <span className="text-xs font-medium mt-1">{tab.label}</span>
-            </div>
-          </button>
-        );
-      })}
+    <nav className="fixed bottom-0 left-0 w-full z-50 glass border-t border-outline-variant/50 pb-safe">
+      <div className="max-w-2xl mx-auto flex justify-around items-center px-2 py-2">
+        {tabs.map((tab) => {
+          const isActive = currentPage === tab.id;
+          const Icon = tab.icon;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onPageChange(tab.id)}
+              className="relative flex flex-col items-center justify-center px-3 py-1.5 min-w-[56px]"
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute inset-x-2 -top-1 h-0.5 bg-primary rounded-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <div className={`relative flex flex-col items-center gap-0.5 transition-colors duration-200 ${
+                isActive ? 'text-primary' : 'text-on-surface-variant'
+              }`}>
+                <Icon
+                  size={20}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  fill={isActive ? "currentColor" : "none"}
+                />
+                <span className={`text-[9px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                  {tab.label}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

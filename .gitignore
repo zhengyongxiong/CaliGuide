@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+caliguide.db
+caliguide.db-shm
+caliguide.db-wal
+test-results/

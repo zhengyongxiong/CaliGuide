@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { readAvatarFile } from "./avatarUpload";
 
 describe("avatarUpload", () => {
@@ -7,7 +7,7 @@ describe("avatarUpload", () => {
 
     const dataUrl = await readAvatarFile(file);
 
-    expect(dataUrl).toStartWith("data:image/png;base64,");
+    expect(dataUrl).toMatch(/^data:image\/png;base64,/);
   });
 
   test("rejects non-image uploads", async () => {
