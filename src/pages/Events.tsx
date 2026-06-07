@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Calendar, MapPin, Users, Clock, Globe, Building2, Heart,
-  Loader2, ChevronRight, Check, X, Filter, Search
+  Loader2, ChevronRight, Check, X, Filter, Search, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { eventsApi } from '../lib/api';
@@ -37,6 +37,19 @@ export default function Events({ onNavigate }: EventsProps) {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [registering, setRegistering] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    description: '',
+    type: 'offline',
+    category: 'meetup',
+    location: '',
+    online_link: '',
+    start_date: '',
+    end_date: '',
+    max_participants: 0,
+  });
 
   useEffect(() => {
     loadEvents();
@@ -100,6 +113,33 @@ export default function Events({ onNavigate }: EventsProps) {
       console.error('Failed to cancel registration:', e);
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const handleCreateEvent = async () => {
+    if (!newEvent.title.trim() || !newEvent.description.trim() || !newEvent.start_date) return;
+    setCreating(true);
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('caliguide-token')}`,
+        },
+        body: JSON.stringify(newEvent),
+      });
+      if (response.ok) {
+        setShowCreateForm(false);
+        setNewEvent({
+          title: '', description: '', type: 'offline', category: 'meetup',
+          location: '', online_link: '', start_date: '', end_date: '', max_participants: 0,
+        });
+        loadEvents();
+      }
+    } catch (e) {
+      console.error('Failed to create event:', e);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -397,6 +437,162 @@ export default function Events({ onNavigate }: EventsProps) {
                     className="px-6 py-3 rounded-xl font-medium bg-surface-variant text-on-surface-variant"
                   >
                     {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FAB - Create Event */}
+      <button
+        onClick={() => setShowCreateForm(true)}
+        className="fixed bottom-20 right-4 w-14 h-14 bg-primary text-white rounded-full shadow-xl flex items-center justify-center hover:bg-primary-dark transition-colors z-40 btn-press"
+      >
+        <Plus size={24} />
+      </button>
+
+      {/* Create Event Modal */}
+      <AnimatePresence>
+        {showCreateForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center"
+            onClick={() => setShowCreateForm(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-white rounded-t-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Create Event</h3>
+                  <button onClick={() => setShowCreateForm(false)} className="p-2 hover:bg-surface-variant rounded-full">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="text-xs font-medium text-on-surface-variant">Title *</span>
+                    <input
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                      className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      placeholder="Event title"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-medium text-on-surface-variant">Description *</span>
+                    <textarea
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                      rows={3}
+                      className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                      placeholder="Describe your event..."
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs font-medium text-on-surface-variant">Category</span>
+                      <select
+                        value={newEvent.category}
+                        onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
+                        className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white"
+                      >
+                        <option value="meetup">Meetup</option>
+                        <option value="workshop">Workshop</option>
+                        <option value="seminar">Seminar</option>
+                        <option value="volunteer">Volunteer</option>
+                        <option value="social">Social</option>
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-medium text-on-surface-variant">Type</span>
+                      <select
+                        value={newEvent.type}
+                        onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
+                        className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white"
+                      >
+                        <option value="offline">In-Person</option>
+                        <option value="online">Online</option>
+                        <option value="hybrid">Hybrid</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="text-xs font-medium text-on-surface-variant">Location</span>
+                    <input
+                      value={newEvent.location}
+                      onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                      className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      placeholder="Address or venue"
+                    />
+                  </label>
+
+                  {newEvent.type !== 'offline' && (
+                    <label className="block">
+                      <span className="text-xs font-medium text-on-surface-variant">Online Link</span>
+                      <input
+                        value={newEvent.online_link}
+                        onChange={(e) => setNewEvent({ ...newEvent, online_link: e.target.value })}
+                        className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        placeholder="https://zoom.us/..."
+                      />
+                    </label>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs font-medium text-on-surface-variant">Start Date *</span>
+                      <input
+                        type="datetime-local"
+                        value={newEvent.start_date}
+                        onChange={(e) => setNewEvent({ ...newEvent, start_date: e.target.value })}
+                        className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-medium text-on-surface-variant">End Date</span>
+                      <input
+                        type="datetime-local"
+                        value={newEvent.end_date}
+                        onChange={(e) => setNewEvent({ ...newEvent, end_date: e.target.value })}
+                        className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="text-xs font-medium text-on-surface-variant">Max Participants (0 = unlimited)</span>
+                    <input
+                      type="number"
+                      value={newEvent.max_participants}
+                      onChange={(e) => setNewEvent({ ...newEvent, max_participants: parseInt(e.target.value) || 0 })}
+                      className="mt-1 w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      placeholder="0"
+                    />
+                  </label>
+
+                  <button
+                    onClick={handleCreateEvent}
+                    disabled={creating || !newEvent.title.trim() || !newEvent.description.trim() || !newEvent.start_date}
+                    className="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2 btn-press"
+                  >
+                    {creating && <Loader2 size={16} className="animate-spin" />}
+                    Create Event
                   </button>
                 </div>
               </div>
